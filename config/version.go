@@ -14,7 +14,7 @@ var (
 )
 
 const (
-	Version = "2.1.0-pre"
+	Version = "2.1.0-pre-DHSDS-201704"
 )
 
 func init() {
