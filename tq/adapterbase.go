@@ -3,6 +3,7 @@ package tq
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/git-lfs/git-lfs/lfsapi"
@@ -186,9 +187,26 @@ func (a *adapterBase) worker(workerNum int, ctx interface{}) {
 }
 
 func (a *adapterBase) newHTTPRequest(method string, rel *Action) (*http.Request, error) {
+
+	githubS3Bucket := "github-cloud.s3.amazonaws.com"
+	changeEndpoint := false
+
+	if strings.HasPrefix(rel.Href, "https://"+githubS3Bucket) {
+		// Remap github-cloud.s3.amazonaws.com to use S3 endpoint and Host header
+		tracerx.Printf("tq.newHTTPRequest: Overriding %s to point to s3.amazonaws.com",
+			githubS3Bucket)
+		rel.Href = strings.Replace(rel.Href, githubS3Bucket, "s3.amazonaws.com", 1)
+		changeEndpoint = true
+	}
+
 	req, err := http.NewRequest(method, rel.Href, nil)
 	if err != nil {
 		return nil, err
+	}
+
+	if changeEndpoint {
+		// override HTTP Host header
+		req.Host = githubS3Bucket
 	}
 
 	for key, value := range rel.Header {
